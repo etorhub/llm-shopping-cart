@@ -354,6 +354,11 @@ class ScrapeOrdersOperation extends Operation {
         delete detail._ok;
         const orderData = detail.entities?.order?.[orderId] || detail;
         fullOrders.push(orderData);
+      } else if (detail._status === 404 && !this.page) {
+        // Browserless mode (e.g. running inside the NAS server): no page to
+        // navigate with, so we can't use the page-navigation fallback.
+        console.log(`    Direct API 404 and no browser available — skipping ${orderId}`);
+        fullOrders.push({ _orderId: orderId });
       } else if (detail._status === 404) {
         // Fallback: navigate to order details page
         console.log(`    Direct API 404 — falling back to page navigation ...`);

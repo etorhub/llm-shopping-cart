@@ -1,0 +1,31 @@
+services:
+  bonpreu-mcp:
+    build:
+      context: .
+      dockerfile: Dockerfile.nas
+    image: bonpreu-mcp:latest
+    container_name: bonpreu-mcp
+    restart: unless-stopped
+    # Bind to the NAS LAN only. Change the left side if you want a different
+    # host port. Do NOT expose this to the internet without OAuth enabled.
+    ports:
+      - "8080:8080"
+    environment:
+      RETAILER: bonpreu
+      PORT: "8080"
+      # Keep storage LOCAL: do NOT set GCS_BUCKET.
+      #
+      # --- Optional OAuth (recommended even on LAN) ---
+      # Generate strong random values and uncomment. When set, every /mcp call
+      # needs a Bearer token obtained from POST /token with these credentials.
+      # OAUTH_CLIENT_ID: "bonpreu-ha"
+      # OAUTH_CLIENT_SECRET: "<long-random-string>"
+      # OAUTH_JWT_SECRET: "<another-long-random-string>"
+    volumes:
+      # Persist the session and order history OUTSIDE the container so they
+      # survive rebuilds. You populate ./session/session.json from your PC
+      # after running the login there (see DEPLOY_NAS.md).
+      - ./session/session.json:/app/session.json:ro
+      - ./data:/app/data
+    # The server reads session.json read-only; order updates are written to
+    # /app/data which is a writable volume.
