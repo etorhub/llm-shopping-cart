@@ -2,6 +2,7 @@
 const express = require('express');
 const { McpServer } = require('@modelcontextprotocol/sdk/server/mcp.js');
 const { StreamableHTTPServerTransport } = require('@modelcontextprotocol/sdk/server/streamableHttp.js');
+const { SSEServerTransport } = require('@modelcontextprotocol/sdk/server/sse.js');
 const { z } = require('zod');
 const { searchItems, addToCart, updateOrders } = require('./src/ocado-service');
 
@@ -126,6 +127,38 @@ app.get('/mcp', (_req, res) => {
 });
 app.delete('/mcp', (_req, res) => {
   res.status(405).json({ error: 'Stateless mode — session termination not supported' });
+});
+
+// --- MCP SSE transport (for Home Assistant's MCP Client integration) ---
+// Home Assistant's MCP integration speaks the older SSE transport, not
+// Streamable HTTP. SSE is stateful: the client opens GET /sse to receive a
+// stream, then POSTs JSON-RPC messages to /messages?sessionId=... . We keep one
+// transport per open connection, keyed by its sessionId.
+const sseTransports = new Map();
+
+app.get('/sse', authMiddleware, async (req, res) => {
+  // The endpoint passed here is where the client must POST its messages.
+  const transport = new SSEServerTransport('/messages', res);
+  sseTransports.set(transport.sessionId, transport);
+
+  res.on('close', () => {
+    sseTransports.delete(transport.sessionId);
+    transport.close();
+  });
+
+  const server = createMcpServer();
+  await server.connect(transport); // calls transport.start() internally
+});
+
+app.post('/messages', authMiddleware, async (req, res) => {
+  const sessionId = req.query.sessionId;
+  const transport = sessionId && sseTransports.get(sessionId);
+  if (!transport) {
+    return res.status(400).json({ error: 'No active SSE session for that sessionId' });
+  }
+  // Pass the already-parsed body (express.json ran globally) so the transport
+  // doesn't try to read the stream a second time.
+  await transport.handlePostMessage(req, res, req.body);
 });
 
 // --- REST endpoints (for OpenAI / generic HTTP clients) ---
@@ -264,6 +297,7 @@ The response includes order details with items, prices, and delivery dates.`,
 app.listen(PORT, () => {
   console.log(`Ocado MCP HTTP server listening on port ${PORT}`);
   console.log(`  MCP endpoint: POST /mcp`);
+  console.log(`  MCP SSE endpoint (Home Assistant): GET /sse`);
   console.log(`  REST endpoints: POST /api/search, /api/add-to-cart, /api/update-orders`);
   console.log(`  OAuth token endpoint: POST /token`);
   console.log(`  Auth: ${OAUTH_CLIENT_ID ? 'OAuth (client_credentials)' : 'OPEN (no OAUTH_CLIENT_ID set)'}`);
