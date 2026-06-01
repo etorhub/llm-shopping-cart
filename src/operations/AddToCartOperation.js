@@ -2,6 +2,7 @@ require('dotenv').config();
 const fs = require('fs');
 const path = require('path');
 const Operation = require('../modules/Operation');
+const config = require('../config');
 
 // Simple UUID v4 generator (no external dependency needed)
 function generateUUID() {
@@ -259,7 +260,7 @@ class AddToCartOperation extends Operation {
     // -----------------------------------------------------------------------
     // 2. Build request and make API call
     // -----------------------------------------------------------------------
-    const apiUrl = 'https://www.ocado.com/api/cart/v1/carts/active/apply-quantity';
+    const apiUrl = config.endpoints.applyQuantity;
     
     const headers = {
       'accept': 'application/json; charset=utf-8',
@@ -351,7 +352,7 @@ class AddToCartOperation extends Operation {
     }
     
     const cartResponse = await this.apiFetch(
-      'https://www.ocado.com/api/cart/v1/carts/active',
+      config.endpoints.cartActive,
       'GET',
       cartHeaders
     );

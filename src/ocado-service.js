@@ -1,6 +1,7 @@
 require('dotenv').config({ quiet: true });
 const { PrepareItemsToAddToCart, AddToCartOperation, ScrapeOrdersOperation } = require('./operations');
 const storage = require('./storage-adapter');
+const config = require('./config');
 
 function formatCartSummary(cartUpdate, nameMap) {
   if (!cartUpdate) return null;
@@ -17,14 +18,14 @@ function formatCartSummary(cartUpdate, nameMap) {
   for (const group of itemGroups) {
     for (const item of (group.items || [])) {
       const name = nameMap.get(item.productId) || item.productId;
-      const price = item.price?.amount ? `£${item.price.amount}` : '';
+      const price = item.price?.amount ? `${config.currency}${item.price.amount}` : '';
       cartItems.push({ name, quantity: item.quantity, price });
       lines.push(`  - ${name} x${item.quantity}${price ? ` (${price})` : ''}`);
     }
   }
 
   const totalPrice = totals.itemsRetailPrice?.amount
-    ? `£${totals.itemsRetailPrice.amount}`
+    ? `${config.currency}${totals.itemsRetailPrice.amount}`
     : null;
 
   return {
@@ -103,7 +104,7 @@ async function getCart() {
     headers['X-CSRF-TOKEN'] = session.csrfToken;
   }
 
-  const resp = await fetch('https://www.ocado.com/api/cart/v1/carts/active', {
+  const resp = await fetch(config.endpoints.cartActive, {
     method: 'GET',
     headers,
   });

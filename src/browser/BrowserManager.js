@@ -2,6 +2,7 @@ require('dotenv').config();
 const { chromium } = require('playwright-extra');
 const stealth = require('puppeteer-extra-plugin-stealth');
 const puppeteer = require('puppeteer');
+const config = require('../config');
 
 /**
  * Manages browser lifecycle for operations
@@ -12,8 +13,8 @@ class BrowserManager {
       headless: options.headless ?? true,
       useStealth: options.useStealth ?? false,
       viewport: options.viewport || { width: 1280, height: 900 },
-      locale: options.locale || 'en-GB',
-      timezoneId: options.timezoneId || 'Europe/London',
+      locale: options.locale || config.locale,
+      timezoneId: options.timezoneId || config.timezoneId,
       userAgent: options.userAgent || 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36',
       ...options,
     };

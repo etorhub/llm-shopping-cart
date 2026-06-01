@@ -3,6 +3,7 @@ const fs = require('fs');
 const path = require('path');
 const Operation = require('../modules/Operation');
 const storage = require('../storage-adapter');
+const config = require('../config');
 
 /**
  * Scrape Orders operation - fetches order history from Ocado
@@ -122,7 +123,7 @@ class ScrapeOrdersOperation extends Operation {
       };
       if (csrfToken) headers['X-CSRF-TOKEN'] = csrfToken;
       
-      const result = await this.directFetch('https://www.ocado.com/graphql', {
+      const result = await this.directFetch(config.endpoints.graphql, {
         method: 'POST',
         headers,
         body: { operationName, query, variables },
@@ -345,7 +346,7 @@ class ScrapeOrdersOperation extends Operation {
       const orderId = ordersToFetch[i];
       console.log(`  [${i + 1}/${ordersToFetch.length}] Fetching order ${orderId} ...`);
 
-      const detailUrl = `https://www.ocado.com/api/order/v6/orders/${orderId}`;
+      const detailUrl = config.endpoints.orderDetail(orderId);
       const detail = await this.apiFetch(detailUrl, REST_HEADERS);
 
       if (detail._ok) {
@@ -381,7 +382,7 @@ class ScrapeOrdersOperation extends Operation {
 
           page.on('response', handler);
           try {
-            await page.goto(`https://www.ocado.com/orders/${orderId}/details`, {
+            await page.goto(config.endpoints.orderDetailPage(orderId), {
               waitUntil: 'domcontentloaded',
               timeout: 12000,
             });
