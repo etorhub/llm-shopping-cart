@@ -1,4 +1,30 @@
-# Ocado MCP Server
+# Bonpreu MCP Server (fork of ampai-uk/llm-shopping-cart)
+
+> **READ FIRST: `HANDOFF.md`** in the repo root — it has the full project
+> context, decisions, and ordered next steps. This file below is the upstream
+> reference; some of it still says "Ocado UK".
+
+**This fork targets Bonpreu Esclat** (compraonline.bonpreuesclat.cat), which
+runs on the same Ocado Smart Platform as Ocado UK, so the API is essentially
+identical. The adaptation is driven by `src/config.js` (`RETAILER=bonpreu`
+default). Login goes through Bonpreu's OpenID Connect (app.bonpreu.cat), not
+Ocado SSO. Currency is € and locale ca-ES.
+
+**Current goal:** deploy the HTTP/SSE server dockerised on a NAS, then connect
+it to Home Assistant Assist (single voice agent that controls the house AND
+shops). The Bonpreu adaptation is done and tested against a real account
+(38 orders / 1756 products fetched). See HANDOFF.md for what's left.
+
+Deployment docs: `DEPLOY_NAS.md` (NAS Docker), `HOME_ASSISTANT.md` (HA wiring),
+`BONPREU_SETUP.md` (first-run / the verified unknowns).
+
+Note: for the NAS, run `mcp-server-http.js` via `Dockerfile.nas` /
+`docker-compose.nas.yml`. HA connects over SSE at `GET /sse` (not `/mcp`).
+Keep storage LOCAL — never set `GCS_BUCKET`.
+
+---
+
+## Upstream reference (originally written for Ocado UK)
 
 An MCP (Model Context Protocol) server that lets Claude interact with Ocado, the UK online grocery service. Users can search their order history and add items to their cart via natural language.
 
